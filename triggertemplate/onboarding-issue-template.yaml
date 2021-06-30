@@ -36,7 +36,7 @@ spec:
       metadata:
         name: onboarding-issue-$(uid)
       spec:
-        serviceAccountName: onboarding-issue-sa
+        serviceAccountName: aicoe-ci
         pipelineRef:
           name: onboarding-issue-pipeline
         params:

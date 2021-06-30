@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: onboarding-issue
+  name: opf-onboarding-issue
 spec:
   params:
     - name: event_action
@@ -26,21 +26,18 @@ spec:
       description: The git repository ssh url
     - name: issue_body
       description: Body of the Issue.
-    
   resources:
     inputs:
       - name: opf-apps
         type: git
       - name: opfcli
         type: git
-
   steps:
     - name: build-opfcli-binary
       image: 'quay.io/larsks/opf-go-precommit:latest'
       workingDir: /workspace/opfcli
       script: |
         make
-
     - name: build-deployment-file
       image: 'quay.io/thoth-station/s2i-thoth-ubi8-py38:v0.29.0'
       workingDir: /workspace/opf-apps/
@@ -49,11 +46,10 @@ spec:
         import os
         import json
         import yaml
-        
         body = """$(params.issue_body)[3:]""";
         array = body.split("###")
         array.pop(0)
-        for i in range (0, len(array)): 
+        for i in range (0, len(array)):
           start = array[i].find('\n') + 1
           if i == len(array)-1:
             end = len(array[i])
@@ -61,23 +57,20 @@ spec:
             end = len(array[i]) - 2
           array[i] = array[i].strip()
           array[i] = array[i][start:end]
-
         target_cluster = array[0]
-        team_name = array[1] 
+        team_name = array[1]
         project_namespaces = array[2].split(",")
         project_description = array[3]
         users = array[4]
         namespace_quota = array[5]
         custom_quota = array[6].split(",")
         gpg_keys = array[7] # update when keycloack migration done
-
         data = {
-          "template": "onboarding-to-cluster", 
+          "template": "onboarding-to-cluster",
           "team_name": team_name,
           "project_description": project_description,
           "env": "MOC"
         }
-
         if target_cluster != "None":
           data["target_cluster"] = target_cluster
         if users != "None" and users != "" and users != "_No response_":
@@ -89,7 +82,6 @@ spec:
           quota = ["custom_quota", custom_quota]
         else:
           quota = ["quota", namespace_quota]
-
         namespaces = []
         for i in range(0, len(project_namespaces)):
           tempNS = {
@@ -99,16 +91,13 @@ spec:
           }
           namespaces.append(tempNS)
         data["namespaces"] = namespaces
-
         with open(f"/workspace/onboard-file.yaml", "w") as config_yaml:
           yaml.dump(data, config_yaml, allow_unicode=True)
-
     - name: opfcli-run-onboard
       workingDir: /workspace/opf-apps/
-      image: 'quay.io/larsks/opf-go-precommit:latest' 
+      image: 'quay.io/larsks/opf-go-precommit:latest'
       script: |
         /workspace/opfcli/opfcli-linux-amd64 onboard /workspace/onboard-file.yaml
-
     - name: enable-rolebindings-and-namespace-to-cluster
       image: 'quay.io/thoth-station/s2i-thoth-ubi8-py38:v0.29.0'
       workingDir: /workspace/opf-apps/
@@ -117,8 +106,6 @@ spec:
         import os
         import json
         import yaml
-
-        # adding namespace to kustomization file
         with open("/workspace/onboard-file.yaml", 'r') as stream:
           data = yaml.safe_load(stream)
         path = "/workspace/opf-apps/cluster-scope/overlays/" + data["env"].lower() + "/" + data["target_cluster"].lower()  + "/kustomization.yaml"
@@ -127,7 +114,7 @@ spec:
         kustomization_file = kustomization_file.split("\n")
         namespace_resources_to_add = [];
         for i in data["namespaces"]:
-          tempPath = "  - ../../base/core/namespaces/" + i["name"] 
+          tempPath = "  - ../../base/core/namespaces/" + i["name"]
           namespace_resources_to_add.append(tempPath)
         for i in range(0, len(kustomization_file)):
           kustomization_file[i] += "\n"
@@ -139,30 +126,24 @@ spec:
             generators_line = i
           if kustomization_file[i] == "patchesStrategicMerge:\n":
             patchesStrategicMerge_line = i
-
         resources = kustomization_file[resources_line+1:generators_line-1]
         generators = kustomization_file[generators_line+1:patchesStrategicMerge_line-1]
         patchesStrategicMerge = kustomization_file[patchesStrategicMerge_line+1:]
-
         resources.sort()
         generators.sort()
         patchesStrategicMerge.sort()
-        
         for i in range(0, len(resources)):
           if resources[i] != "\n" or resources[i] == "":
             resources = resources[i:]
             break
-
         for i in range(0, len(generators)):
           if generators[i] != "\n" or generators[i] == "":
             generators = generators[i:]
             break
-
         for i in range(0, len(patchesStrategicMerge)):
           if patchesStrategicMerge[i] != "\n" or patchesStrategicMerge == "":
             patchesStrategicMerge = patchesStrategicMerge[i:]
-            break 
-
+            break
         resources.insert(0, "resources:\n")
         resources.append("\n")
         generators.insert(0, "generators:\n")
@@ -170,20 +151,15 @@ spec:
         patchesStrategicMerge.insert(0, "patchesStrategicMerge:\n")
         patchesStrategicMerge.append("\n")
         header = ["---\n", "apiVersion: kustomize.config.k8s.io/v1beta1\n", "kind: Kustomization\n", "\n"]
-
         kustomization_file_sorted = "".join(header + resources + generators + patchesStrategicMerge)
-
         with open(path, "w") as file:
           file.write(kustomization_file_sorted)
-
-        # giving users RBAC permissions
         if data["env"].lower() == "moc" and (data["target_cluster"].lower() == "zero" or data["target_cluster"].lower() == "infra"):
           tc = "common"
         else:
           tc = data["target_cluster"].lower()
-        
-        path ="/workspace/opf-apps/cluster-scope/overlays/" + data["env"].lower() + "/" + tc + "/groups/" + data["team_name"] + ".yaml"
 
+        path ="/workspace/opf-apps/cluster-scope/overlays/" + data["env"].lower() + "/" + tc + "/groups/" + data["team_name"] + ".yaml"
         manifest = {
           "apiVersion": "user.openshift.io/v1",
           "kind": "Group",
@@ -198,11 +174,8 @@ spec:
         manifest["metadata"]["name"] = data["team_name"]
         for i in data["users"]:
           manifest["users"].append(i)
-        
-
         with open(path, "w") as file:
           yaml.dump(manifest, file, allow_unicode=True)
-
     - name: pr
       env:
         - name: GITHUB_USERNAME
@@ -228,7 +201,7 @@ spec:
         - name: TOKEN
           valueFrom:
             secretKeyRef:
-              name: auth-secret-two 
+              name: auth-secret-two
               key: token
       workingDir: /workspace/opf-apps/
       image: 'quay.io/larsks/opf-go-precommit:latest'
@@ -237,12 +210,12 @@ spec:
         git remote add https_pushref https://$GITHUB_USERNAME:$TOKEN@github.com/$GITHUB_USERNAME/apps.git
         git remote add ssh_pushref git@github.com:Gregory-Pereira/apps.git
         git config --global user.email "$GITHUB_EMAIL"
-        git config --global user.name "$GITHUB_USERNAME" 
+        git config --global user.name "$GITHUB_USERNAME"
         git branch -r
         git config -l
         teamName=$(cat /workspace/onboard-file.yaml | grep "team_name: " | cut -c12-)
         message="onboarding for team ${teamName}"
-        git checkout -b onboarding-${teamName} 
+        git checkout -b onboarding-${teamName}
         git status
         git add .
         git status

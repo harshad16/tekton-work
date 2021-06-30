@@ -69,7 +69,7 @@ spec:
         https://github.com/$(params.git_organization)/$(params.git_repository).git
         cd $(params.git_repository);
         existing_tags= git tag
-        if [[ "${existing_tags}" -ne *"$(params.git_tag)"* ]]; then  
+        if [[ "${existing_tags}" -ne *"$(params.git_tag)"* ]]; then
           git checkout $(params.git_tag)-build
         else
           git checkout tags/$(params.git_tag) -b $(params.git_tag)-build
@@ -86,7 +86,7 @@ spec:
       script: >
         release_check_status="$(curl -s -o /dev/null -w "%{http_code}"
         https://api.github.com/repos/$(params.git_organization)/$(params.git_repository)/releases/tags/$(params.git_tag))"
-        if [[ $release_check_status -eq 200 ]]; then 
+        if [[ $release_check_status -eq 200 ]]; then
           echo "release already exists."
           exit 1;
         else

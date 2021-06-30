@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: onboarding-issue-pipeline
+  name: opf-onboarding-issue-pipeline
 spec:
   resources:
     - name: opf-apps-repo
@@ -34,9 +34,9 @@ spec:
     - name: ssh_url
       type: string
   tasks:
-    - name: onboarding-issue
-      taskRef: 
-        name: onboarding-issue
+    - name: opf-onboarding-issue
+      taskRef:
+        name: opf-onboarding-issue
       params:
         - name: event_action
           value: $(params.event_action)

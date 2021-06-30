@@ -2,10 +2,10 @@ apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: build-go-binaries-run
-spec: 
-  taskRef: 
+spec:
+  taskRef:
     name: build-go-binaries
-  params: 
+  params:
     - name: git_organization
       value: "operate-first"
     - name: git_repository
