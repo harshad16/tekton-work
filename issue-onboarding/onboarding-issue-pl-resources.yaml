@@ -1,0 +1,24 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: opf-apps-repo
+spec:
+  type: git
+  params:
+    - name: url
+      value: https://github.com/Gregory-Pereira/apps.git
+    - name: revision
+      value: master
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: opfcli-repo
+spec:
+  type: git
+  params:
+    - name: url
+      value: https://github.com/Gregory-Pereira/opfcli.git
+    - name: revision
+      value: automated-releases

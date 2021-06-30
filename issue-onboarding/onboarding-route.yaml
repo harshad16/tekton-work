@@ -1,0 +1,12 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    eventlistener: onboarding-issue-el
+  name: onboarding-issue-route
+spec:
+  port:
+    targetPort: http-listener
+  to:
+    kind: Service
+    name: onboarding-issue-service

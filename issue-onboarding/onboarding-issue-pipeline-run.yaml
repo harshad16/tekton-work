@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: onboarding-issue-run
+spec:
+  pipelineRef:
+    name: onboarding-issue-pipeline
+  resources:
+    - name: opf-apps-dev-repo
+      resourceRef:
+        name: opf-apps-prod-repo
+    - name: opf-apps-prod-repo
+      resourceRef:
+        name: opf-apps-dev-repo
+    - name: opfcli-dev-repo
+      resourceRef:
+        name: opfcli-dev-repo
+    - name: opfcli-prod-repo
+      resourceRef:
+        name: opfcli-prod-repo
+  params:
+    - name: issue_body
+      value: "testing"
+    - name: pipelinerun_name
+      value: onboarding-issue-$(uid)

@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app.kubernetes.io/name: aicoe-ci
+  app.kubernetes.io/component: tekton
+  app.kubernetes.io/version: v1.0.0
+  app.kubernetes.io/managed-by: aicoe-thoth-devops
+resources:
+  - onboarding-issue-binding.yaml
+  - onboarding-issue-pl-resources.yaml
+  - onboarding-issue-template.yaml
+  - onboarding-role-bindings.yaml
+  - onboarding-role.yaml
+  - onboarding-service-account.yaml
+  - onboarding-issue-task.yaml
+  - onboarding-issue-pipeline-run.yaml
+  - onboarding-issue-pipeline.yaml
+  - onboarding-event-listener.yaml
